@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6B0F1A;
+  --color-secondary: #D4AF37;
+  --color-cream: #FFF8E7;
+  --color-dark: #2B2B2B;
+
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+  --font-devanagari: "Noto Sans Devanagari", sans-serif;
+
+  --shadow-premium: 0 10px 30px -10px rgba(107, 15, 26, 0.15);
+  --shadow-gold: 0 10px 30px -10px rgba(212, 175, 55, 0.25);
+}
+
+@layer base {
+  body {
+    @apply bg-cream text-dark font-body antialiased selection:bg-primary/20 selection:text-primary;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+/* Custom premium class utilities */
+.glass-effect {
+  background: rgba(255, 248, 231, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(107, 15, 26, 0.08);
+}
+
+.glass-effect-dark {
+  background: rgba(43, 43, 43, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.premium-border {
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Button Ripple/Hover Animation */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ripple-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease-out, height 0.6s ease-out;
+}
+
+.ripple-btn:active::after {
+  width: 300%;
+  height: 300%;
+}

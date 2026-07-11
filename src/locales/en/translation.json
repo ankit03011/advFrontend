@@ -1,0 +1,43 @@
+{
+  "hero": {
+    "title": "A Vision for Progress, Integrity & Change",
+    "position": "Candidate for Joint Secretary",
+    "cta": "Join the Campaign",
+    "candidate_name": "Shailender Yadav"
+  },
+  "intro": {
+    "greeting": "Namaste & Greetings, Dear Advocates",
+    "body": "Welcome to our official campaign portal. Our mission is to build a prosperous, inclusive, and highly developed Bar Association. Devendra Pratap Singh stands as a beacon of progress and transparency. Together, let us shape a better tomorrow.",
+    "polling_date": "Polling Date",
+    "polling_value": "July 20, 2026",
+    "contact_no": "Contact Number",
+    "candidate_role": "Joint Secretary Candidate"
+  },
+  "search": {
+    "title": "Constituent Directory Search",
+    "subtitle": "Search your record in the voter and candidate directory by full name, phone number, or enrollment ID.",
+    "placeholder_all": "Enter name, phone, or enrollment number...",
+    "placeholder_name": "Enter full name...",
+    "placeholder_phone": "Enter 10-digit mobile number...",
+    "placeholder_enrollment": "Enter enrollment number...",
+    "btn_all": "All Criteria",
+    "btn_name": "Name",
+    "btn_phone": "Phone",
+    "btn_enroll": "Enrollment No",
+    "empty": "No results found. Try adjusting your query or filters.",
+    "results_count": "Showing {{count}} results"
+  },
+  "results": {
+    "view_profile": "View Profile",
+    "enrollment_raw": "Enrollment",
+    "father_name": "Father's Name",
+    "mobile": "Mobile Number",
+    "token": "Security Token",
+    "verified": "Verified Record"
+  },
+  "banner": {
+    "slogan": "Your Vote, Your Future. Let's Vote for Progress!",
+    "association": "Democratic Citizens Association",
+    "rights": "All Rights Reserved. © 2026 Campaign Office."
+  }
+}
