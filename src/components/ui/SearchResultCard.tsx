@@ -34,7 +34,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
       <div className="flex items-center gap-4">
         {/* Photo Thumbnail */}
         <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-secondary/20 shadow-inner flex-shrink-0 bg-primary/5 flex items-center justify-center">
-          {photo && !imgError ? (
+          {photo && photo.trim() !== "" && photo !== "null" && photo !== "undefined" && !imgError ? (
             <img
               src={photo}
               alt={fullName}

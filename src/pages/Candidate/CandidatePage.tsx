@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
@@ -29,6 +29,11 @@ export const CandidatePage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isHindi = i18n.language === "hi";
 
+  // Mock server states for frontend-only mode
+  const isServerReady = true;
+  const isHealthError = false;
+  const refetchHealth = () => {};
+
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"all" | "name" | "phone" | "enrollment">("all");
@@ -39,8 +44,25 @@ export const CandidatePage: React.FC = () => {
   // Debounced search query
   const debouncedQuery = useDebounce(searchQuery, 500);
 
-  // React Query to search voters (Only runs if query is 2+ characters long)
-  const isSearchActive = debouncedQuery.trim().length >= 2;
+  // Pagination States
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [isLoadMoreLoading, setIsLoadMoreLoading] = useState(false);
+
+  // Reset pagination when query or searchType changes
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [debouncedQuery, searchType]);
+
+  const handleLoadMore = () => {
+    setIsLoadMoreLoading(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 10);
+      setIsLoadMoreLoading(false);
+    }, 850);
+  };
+
+  // React Query to search voters (Only runs if query is 2+ characters long AND server is ready)
+  const isSearchActive = debouncedQuery.trim().length >= 2 && isServerReady;
 
   const {
     data: searchResults = [],
@@ -48,8 +70,8 @@ export const CandidatePage: React.FC = () => {
     isError: isSearchError,
     refetch: refetchSearch,
   } = useQuery({
-    queryKey: ["voters", "search", debouncedQuery],
-    queryFn: () => voterService.searchVoters(debouncedQuery),
+    queryKey: ["voters", "search", debouncedQuery, searchType],
+    queryFn: () => voterService.searchVoters(debouncedQuery, searchType),
     enabled: isSearchActive,
     staleTime: 60000, // 1 minute cache
   });
@@ -279,11 +301,35 @@ export const CandidatePage: React.FC = () => {
             onChange={setSearchQuery}
             searchType={searchType}
             onSearchTypeChange={setSearchType}
+            disabled={!isServerReady}
           />
 
           {/* Search Result display logic */}
           <div className="pt-4">
-            {!isSearchActive ? (
+            {isHealthError ? (
+              <div className="text-center py-8 bg-primary/5 border border-primary/10 rounded-3xl space-y-4">
+                <div className="flex items-center justify-center text-primary gap-2">
+                  <IoAlertCircleOutline className="w-8 h-8" />
+                  <span className="font-bold">
+                    {isHindi
+                      ? "सर्वर कनेक्शन विफल। कृपया पुनः प्रयास करें।"
+                      : "Server connection failed. Please try again."}
+                  </span>
+                </div>
+                <Button variant="primary" size="sm" onClick={() => refetchHealth()}>
+                  {isHindi ? "पुनः प्रयास करें" : "Reconnect Database"}
+                </Button>
+              </div>
+            ) : !isServerReady ? (
+              <div className="text-center py-10 bg-white/40 border border-primary/5 rounded-3xl space-y-4">
+                <Loading />
+                <p className="text-dark/50 text-sm font-semibold animate-pulse">
+                  {isHindi
+                    ? "सर्वर चालू हो रहा है... (पहले लोड में 30-40 सेकंड लग सकते हैं)"
+                    : "Warming up search server... (first load may take 30-40 seconds)"}
+                </p>
+              </div>
+            ) : !isSearchActive ? (
               <div className="text-center py-10 bg-white/40 border border-primary/5 rounded-3xl">
                 <p className="text-dark/50 text-sm font-semibold">
                   {isHindi
@@ -310,11 +356,15 @@ export const CandidatePage: React.FC = () => {
             ) : (
               <div className="space-y-4 animate-fade-in">
                 <div className="flex justify-between items-center text-xs font-semibold text-dark/50 px-2">
-                  <span>{t("search.results_count", { count: searchResults.length })}</span>
+                  <span>
+                    {isHindi
+                      ? `परिणाम: ${Math.min(visibleCount, searchResults.length)} / ${searchResults.length}`
+                      : `Showing ${Math.min(visibleCount, searchResults.length)} of ${searchResults.length} results`}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {searchResults.map((voter) => (
+                  {searchResults.slice(0, visibleCount).map((voter) => (
                     <SearchResultCard
                       key={voter.id}
                       id={voter.id}
@@ -327,6 +377,26 @@ export const CandidatePage: React.FC = () => {
                     />
                   ))}
                 </div>
+
+                {searchResults.length > visibleCount && (
+                  <div className="flex flex-col items-center justify-center pt-6 pb-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={isLoadMoreLoading}
+                      className="min-w-[150px] border-primary/20 hover:border-primary/60 text-primary bg-white/80 hover:bg-cream"
+                    >
+                      {isLoadMoreLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                          <span>{isHindi ? "लोड हो रहा है..." : "Loading..."}</span>
+                        </div>
+                      ) : (
+                        <span>{isHindi ? "और दिखाएं" : "Load More"}</span>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -376,7 +446,11 @@ export const CandidatePage: React.FC = () => {
       </section>
 
       {/* Candidate Details Modal */}
-      <Modal isOpen={!!selectedToken} onClose={() => setSelectedToken(null)}>
+      <Modal
+        isOpen={!!selectedToken}
+        onClose={() => setSelectedToken(null)}
+        title={isHindi ? "मतदाता सूची विवरण" : "Voter Profile Details"}
+      >
         {isDetailsLoading ? (
           <Loading />
         ) : isDetailsError ? (

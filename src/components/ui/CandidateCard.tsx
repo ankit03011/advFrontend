@@ -24,6 +24,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
   const isHindi = i18n.language === "hi";
   const slipRef = useRef<HTMLDivElement>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   // Dynamic campaign details based on current candidate
   const campaignCandidateName = isHindi ? "शैलेन्द्र यादव" : "Shailendra Yadav";
@@ -87,20 +88,36 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
     }
   };
 
-  // 2. Print Voter Slip (Prints exact high-res image of the card)
+  // 2. Print Voter Slip (Prints exact high-res image of the card using hidden iframe to prevent mobile popup blocker issues)
   const handlePrint = async () => {
     if (!slipRef.current) return;
     const loadToast = toast.loading(isHindi ? "प्रिंट की तैयारी हो रही है..." : "Preparing print...");
     try {
       const canvas = await handleHtml2Canvas(slipRef.current, 3);
       const imgDataUrl = canvas.toDataURL("image/png");
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast.error(isHindi ? "प्रिंट विंडो खोलने में असमर्थ" : "Unable to open print window", { id: loadToast });
-        return;
+      
+      // Get or create hidden iframe
+      let iframe = document.getElementById("print-iframe") as HTMLIFrameElement | null;
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.id = "print-iframe";
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "none";
+        iframe.style.visibility = "hidden";
+        document.body.appendChild(iframe);
       }
 
-      printWindow.document.write(`
+      const doc = iframe.contentDocument || (iframe.contentWindow ? iframe.contentWindow.document : null);
+      if (!doc) {
+        throw new Error("Could not access iframe document context");
+      }
+
+      doc.open();
+      doc.write(`
         <html>
           <head>
             <title>Print Voter Slip - ${candidate.full_name}</title>
@@ -116,33 +133,31 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
               }
               img {
                 max-width: 100%;
-                max-height: 105%;
+                max-height: 100%;
                 object-fit: contain;
               }
               @page {
                 size: auto;
-                margin: 5mm;
-              }
-              @media print {
-                body {
-                  background: none;
-                }
+                margin: 0mm;
               }
             </style>
           </head>
           <body>
             <img src="${imgDataUrl}" />
-            <script>
-              window.onload = function() {
-                window.print();
-                window.close();
-              }
-            </script>
           </body>
         </html>
       `);
-      printWindow.document.close();
-      toast.dismiss(loadToast);
+      doc.close();
+
+      // Short delay to ensure document is parsed and print is triggered reliably
+      setTimeout(() => {
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        }
+        toast.dismiss(loadToast);
+      }, 500);
+
     } catch (error) {
       console.error("Print error", error);
       toast.error(isHindi ? "प्रिंट करने में विफल" : "Failed to print", { id: loadToast });
@@ -219,25 +234,25 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
           justifyContent: "space-between",
           alignItems: "center",
           borderBottom: "2.5px solid #6b0f1a",
-          paddingBottom: "8px",
-          marginBottom: "16px"
+          paddingBottom: "6px",
+          marginBottom: "12px"
         }}>
           <div style={{
-            backgroundColor: "#2d3748",
-            color: "#ffffff",
-            padding: "4px 12px",
-            fontWeight: "800",
-            fontSize: "14px",
-            borderRadius: "8px"
+            color: "#4a5568",
+            fontWeight: "700",
+            fontSize: "11px",
+            whiteSpace: "nowrap"
           }}>
             S.No {candidate.source_sno || candidate.id}
           </div>
           <div style={{
             color: "#6b0f1a",
             fontWeight: "800",
-            fontSize: "14px",
+            fontSize: "11px",
             letterSpacing: "0.02em",
-            textTransform: "uppercase"
+            textTransform: "uppercase",
+            textAlign: "right",
+            lineHeight: "1.2"
           }}>
             Jabalpur District Bar Association
           </div>
@@ -247,32 +262,33 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr auto",
-          gap: "16px",
+          gap: "12px",
           alignItems: "center"
         }}>
           {/* Details (Left Side) */}
           <div style={{
             display: "flex",
             flexDirection: "column",
-            gap: "12px"
+            gap: "8px"
           }}>
             <div>
               <span style={{
-                fontSize: "10px",
+                fontSize: "9px",
                 color: "#718096",
                 fontWeight: "800",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 display: "block",
-                marginBottom: "2px"
+                marginBottom: "1px"
               }}>Name</span>
               <span style={{
-                fontSize: "18px",
-                fontWeight: "950",
+                fontSize: "15px",
+                fontWeight: "700",
                 color: "#6b0f1a",
                 textTransform: "uppercase",
-                lineHeight: "1.2",
-                display: "block"
+                lineHeight: "1.15",
+                display: "block",
+                wordBreak: "break-word"
               }}>
                 {candidate.full_name}
               </span>
@@ -280,23 +296,23 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
             
             <div style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1.1fr",
-              gap: "8px",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "6px",
               alignItems: "center"
             }}>
               <div>
                 <span style={{
-                  fontSize: "10px",
+                  fontSize: "9px",
                   color: "#718096",
                   fontWeight: "800",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                   display: "block",
-                  marginBottom: "2px"
+                  marginBottom: "1px"
                 }}>Enrolment No. / Year</span>
                 <span style={{
-                  fontSize: "14px",
-                  fontWeight: "800",
+                  fontSize: "12px",
+                  fontWeight: "700",
                   color: "#1a202c",
                   textTransform: "uppercase",
                   display: "block"
@@ -312,24 +328,24 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
                 justifyContent: "center",
                 alignItems: "center",
                 borderLeft: "1px solid rgba(0,0,0,0.08)",
-                paddingLeft: "8px"
+                paddingLeft: "6px"
               }}>
                 <span style={{
-                  fontWeight: "900",
+                  fontWeight: "800",
                   color: "#1e3a8a",
-                  fontSize: "16px",
+                  fontSize: "13px",
                   lineHeight: "1",
                   display: "block"
                 }}>
                   {campaignCandidateName}
                 </span>
                 <span style={{
-                  fontSize: "9px",
-                  fontWeight: "800",
+                  fontSize: "8px",
+                  fontWeight: "700",
                   color: "#b91c1c",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  marginTop: "3px",
+                  marginTop: "2px",
                   display: "block"
                 }}>
                   {campaignRoleForCard}
@@ -339,20 +355,21 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
 
             <div>
               <span style={{
-                fontSize: "10px",
+                fontSize: "9px",
                 color: "#718096",
                 fontWeight: "800",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 display: "block",
-                marginBottom: "2px"
+                marginBottom: "1px"
               }}>Father's Name</span>
               <span style={{
-                fontSize: "14px",
-                fontWeight: "800",
+                fontSize: "12px",
+                fontWeight: "600",
                 color: "#2d3748",
                 textTransform: "uppercase",
-                display: "block"
+                display: "block",
+                wordBreak: "break-word"
               }}>
                 {candidate.father_name || "N/A"}
               </span>
@@ -361,21 +378,22 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
 
           {/* Photo (Right Side) */}
           <div style={{
-            width: "112px",
-            height: "112px",
-            borderRadius: "16px",
+            width: "88px",
+            height: "88px",
+            borderRadius: "12px",
             overflow: "hidden",
-            border: "2px solid #d4af37",
+            border: "1.5px solid #d4af37",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
             backgroundColor: "#f7fafc"
           }}>
-            {candidate.photo ? (
+            {candidate.photo && candidate.photo.trim() !== "" && candidate.photo !== "null" && candidate.photo !== "undefined" && !imgError ? (
               <img
                 src={candidate.photo}
                 alt={candidate.full_name}
+                onError={() => setImgError(true)}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -384,7 +402,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
                 crossOrigin="anonymous"
               />
             ) : (
-              <IoPersonOutline style={{ width: "48px", height: "48px", color: "rgba(107, 15, 26, 0.4)" }} />
+              <IoPersonOutline style={{ width: "36px", height: "36px", color: "rgba(107, 15, 26, 0.4)" }} />
             )}
           </div>
         </div>

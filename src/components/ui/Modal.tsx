@@ -5,10 +5,11 @@ import { IoCloseOutline } from "react-icons/io5";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
   children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   // Disable body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -40,17 +41,25 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg bg-cream rounded-3xl p-6 md:p-8 shadow-2xl border-2 border-secondary z-10 max-h-[90vh] overflow-y-auto scrollbar-thin"
+            className="relative flex flex-col w-full max-w-lg bg-cream rounded-3xl shadow-2xl border-2 border-secondary z-10 max-h-[90vh] overflow-hidden"
           >
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-dark/60 hover:text-primary transition-colors duration-300 rounded-full hover:bg-primary/5 focus:outline-none"
-            >
-              <IoCloseOutline className="w-6 h-6" />
-            </button>
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-primary/10 bg-cream z-20">
+              <h3 className="font-heading font-bold text-lg text-primary">
+                {title || "Details"}
+              </h3>
+              <button
+                onClick={onClose}
+                className="p-2 text-dark/60 hover:text-primary transition-colors duration-300 rounded-full hover:bg-primary/5 focus:outline-none"
+              >
+                <IoCloseOutline className="w-6 h-6" />
+              </button>
+            </div>
 
-            {children}
+            {/* Scrollable Body */}
+            <div className="p-6 md:p-8 overflow-y-auto scrollbar-thin flex-1">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

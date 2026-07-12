@@ -7,6 +7,7 @@ interface SearchBoxProps {
   onChange: (val: string) => void;
   searchType: "all" | "name" | "phone" | "enrollment";
   onSearchTypeChange: (type: "all" | "name" | "phone" | "enrollment") => void;
+  disabled?: boolean;
 }
 
 export const SearchBox: React.FC<SearchBoxProps> = ({
@@ -14,10 +15,14 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
   onChange,
   searchType,
   onSearchTypeChange,
+  disabled = false,
 }) => {
   const { t } = useTranslation();
 
   const getPlaceholder = () => {
+    if (disabled) {
+      return "preparing search..";
+    }
     switch (searchType) {
       case "name":
         return t("search.placeholder_name");
@@ -42,14 +47,19 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-          <IoSearch className="h-6 w-6 text-primary" />
+          <IoSearch className={`h-6 w-6 ${disabled ? "text-primary/30" : "text-primary"}`} />
         </div>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={getPlaceholder()}
-          className="block w-full pl-16 pr-6 py-5 bg-white border-2 border-primary/10 rounded-full text-dark placeholder-dark/40 focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 shadow-premium transition-all duration-300 text-base md:text-lg"
+          disabled={disabled}
+          className={`block w-full pl-16 pr-6 py-5 bg-white border-2 border-primary/10 rounded-full text-dark placeholder-dark/40 focus:outline-none shadow-premium transition-all duration-300 text-base md:text-lg ${
+            disabled 
+              ? "opacity-60 cursor-not-allowed bg-cream/10 animate-pulse border-primary/5" 
+              : "focus:border-secondary focus:ring-2 focus:ring-secondary/20"
+          }`}
         />
       </div>
 
@@ -58,11 +68,14 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
         {types.map((type) => (
           <button
             key={type.id}
-            onClick={() => onSearchTypeChange(type.id)}
+            onClick={() => !disabled && onSearchTypeChange(type.id)}
+            disabled={disabled}
             className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-              searchType === type.id
-                ? "bg-primary text-cream shadow-premium"
-                : "bg-white text-dark/70 hover:bg-primary/5 hover:text-primary border border-primary/5"
+              disabled
+                ? "bg-white/40 text-dark/30 border border-primary/5 cursor-not-allowed"
+                : searchType === type.id
+                  ? "bg-primary text-cream shadow-premium cursor-pointer"
+                  : "bg-white text-dark/70 hover:bg-primary/5 hover:text-primary border border-primary/5 cursor-pointer"
             }`}
           >
             {t(type.key)}
