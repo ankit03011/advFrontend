@@ -1,3 +1,4 @@
+import Fuse from "fuse.js";
 import votersData from "../constants/Data/json/voters.json";
 import type { SearchResult, VoterDetail } from "../types";
 
@@ -39,31 +40,26 @@ export const voterService = {
     // Intentionally show small loading by adding simulated latency
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const lowerQuery = query.toLowerCase().trim();
-    
-    const filtered = voters.filter((voter) => {
-      if (type === "name") {
-        return voter.full_name?.toLowerCase().includes(lowerQuery);
-      }
-      if (type === "phone") {
-        return voter.mobile?.toLowerCase().includes(lowerQuery);
-      }
-      if (type === "enrollment") {
-        return (
-          voter.enrollment_no?.toLowerCase().includes(lowerQuery) ||
-          voter.enrollment_year?.toLowerCase().includes(lowerQuery) ||
-          voter.enrollment_raw?.toLowerCase().includes(lowerQuery)
-        );
-      }
+    let keys: string[] = [];
+    if (type === "name") {
+      keys = ["full_name"];
+    } else if (type === "phone") {
+      keys = ["mobile"];
+    } else if (type === "enrollment") {
+      keys = ["enrollment_no", "enrollment_year", "enrollment_raw"];
+    } else {
       // "all"
-      return (
-        voter.full_name?.toLowerCase().includes(lowerQuery) ||
-        voter.mobile?.toLowerCase().includes(lowerQuery) ||
-        voter.enrollment_raw?.toLowerCase().includes(lowerQuery)
-      );
+      keys = ["full_name", "mobile", "enrollment_no", "enrollment_raw"];
+    }
+
+    const fuse = new Fuse(voters, {
+      keys,
+      threshold: 0.3, // lower = stricter
     });
 
-    return filtered.slice(0, 100).map((voter) => ({
+    const results = fuse.search(query).map((r) => r.item);
+
+    return results.slice(0, 100).map((voter) => ({
       id: voter.id,
       full_name: voter.full_name,
       card_token: voter.card_token,
